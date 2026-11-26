@@ -1015,24 +1015,24 @@ const openEditModal = (member) => {
   if (!session) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans text-slate-800">
-        <div className="w-full max-w-sm bg-white rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
-          
-          {/* Brand Header */}
-          <div className="text-center space-y-1.5">
-            <div className="w-12 h-12 bg-emerald-600 text-white rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-emerald-600/30">
-              <Dumbbell size={24} className="-rotate-12" />
-            </div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">
-              {authScreen === 'login' && 'Gym Register'}
-              {authScreen === 'register' && 'Register My Gym'}
-              {authScreen === 'verify_otp' && 'Verify Email OTP'}
-            </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              {authScreen === 'login' && 'Sign in to manage members & collections'}
-              {authScreen === 'register' && 'Create your gym account to start your register'}
-              {authScreen === 'verify_otp' && `Enter the 6-digit code sent to ${otpEmail}`}
-            </p>
-          </div>
+        <div className="w-full max-w-sm bg-zinc-950 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 text-white">
+
+        {/* Brand Header */}
+     <div className="text-center space-y-1">
+       <div className="w-28 h-28 bg-black rounded-2xl mx-auto -mt-1 -mb-1 flex items-center justify-center overflow-hidden">
+         <img src="/icon-512.png" alt="Gym Register" className="w-full h-full object-cover" />
+       </div>
+          <h1 className="text-xl font-bold text-white tracking-tight">
+            {authScreen === 'login' && 'Gym Register'}
+            {authScreen === 'register' && 'Register My Gym'}
+            {authScreen === 'verify_otp' && 'Verify Email OTP'}
+          </h1>
+          <p className="text-xs text-slate-400 font-medium">
+            {authScreen === 'login' && 'Sign in to manage members'}
+            {authScreen === 'register' && 'Create your gym account to start your register'}
+            {authScreen === 'verify_otp' && `Enter the 6-digit code sent to ${otpEmail}`}
+          </p>
+        </div>
 
           {authError && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-start gap-2">
@@ -1053,7 +1053,7 @@ const openEditModal = (member) => {
             <div className="space-y-4">
               <form onSubmit={handleLoginSubmit} className="space-y-3.5">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
                     Registered Email ID
                   </label>
                   <input
@@ -1069,7 +1069,7 @@ const openEditModal = (member) => {
                 {loginMethod === 'password' && (
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">
                         Password
                       </label>
                       <button
@@ -1109,7 +1109,7 @@ const openEditModal = (member) => {
                       setAuthError('');
                       setAuthInfo('');
                     }}
-                    className="text-[11px] font-medium text-slate-500 hover:text-slate-800 underline transition"
+                    className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
                   >
                     {loginMethod === 'otp'
                       ? 'Sign in with Password instead'
@@ -1134,7 +1134,7 @@ const openEditModal = (member) => {
               </form>
 
               <div className="pt-3 border-t border-slate-100 space-y-2 text-center">
-                <p className="text-[11px] text-slate-400">New gym owner?</p>
+                <p className="text-xs text-slate-400 font-medium">New gym owner?</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -1348,7 +1348,7 @@ const openEditModal = (member) => {
 
               <form onSubmit={handleUpdateNewPassword} className="space-y-3.5">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
                     New Password
                   </label>
                   <div className="relative">
@@ -1385,34 +1385,32 @@ const openEditModal = (member) => {
         )}
 
         {/* Top Header - Centered & Balanced */}
-        <header className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur-md text-white px-4 py-3 shadow-lg border-b border-slate-800/80 flex items-center justify-between">
-          {/* Left: Dumbbell Icon */}
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/25 ring-1 ring-emerald-400/30 shrink-0">
-            <Dumbbell size={19} className="-rotate-12" />
-          </div>
+        <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-md text-white pl-3.5 pr-4 py-0 shadow-lg border-b border-zinc-800 grid grid-cols-[auto_1fr_auto] items-center gap-2">
+      {/* Left: Flush Top-to-Bottom Logo */}
+      <div className="h-12 w-12 bg-black flex items-center justify-center overflow-hidden shrink-0">
+        <img src="/icon-512.png" alt="Gym Register" className="w-full h-full object-cover" />
+      </div>
 
-          {/* Center: Brand Name & Gym Workspace */}
-          <div className="flex flex-col items-center justify-center text-center px-2">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-base font-black tracking-tight text-white leading-tight">
-                Gym Register
-              </h1>
-            </div>
-            <p className="text-[11px] font-medium text-slate-300 flex items-center gap-1.5 mt-0.5 leading-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-              <span className="font-semibold text-slate-200">{displayGymName}</span>
-            </p>
-          </div>
+      {/* Center: Brand Name & Gym Workspace */}
+      <div className="flex flex-col items-center justify-center text-center min-w-0">
+        <h1 className="text-sm font-bold tracking-tight text-white leading-tight truncate">
+          Gym Register
+        </h1>
+        <p className="text-[11px] font-medium text-slate-400 flex items-center justify-center gap-1.5 leading-none mt-0.5 truncate">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse shrink-0"></span>
+          <span className="font-semibold text-slate-200 truncate">{displayGymName}</span>
+        </p>
+      </div>
 
-          {/* Right: Logout Action */}
-          <button
-            onClick={handleLogout}
-            title="Log Out"
-            className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500/40 hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 transition active:scale-95 shadow-sm flex items-center justify-center shrink-0"
-          >
-            <LogOut size={16} />
-          </button>
-        </header>
+      {/* Right: Logout Action */}
+      <button
+        onClick={handleLogout}
+        title="Log Out"
+        className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-rose-500/40 hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 transition active:scale-95 flex items-center justify-center shrink-0"
+      >
+        <LogOut size={16} />
+      </button>
+    </header>
 
         {/* Global Toast */}
         {toastMessage && (
