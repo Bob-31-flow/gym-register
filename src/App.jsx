@@ -32,7 +32,9 @@ import {
   ShieldCheck,
   Loader2,
   FileText,
-  Pencil
+  Pencil,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
@@ -128,11 +130,11 @@ function getWhatsAppLink(member, gymName, type = 'reminder', extra = {}) {
 
   let message = '';
   if (type === 'welcome') {
-    message = `Namaste ${member.name}! \n\nWelcome to *${gymName}*! Your membership is now active.\n• Batch: *${member.batch || 'General Access'}*\n• Valid Till: *${member.expiryDate}*\n• Paid: *₹${member.feeAmount}* (${member.paymentMode || 'UPI'})\n\nLet's get to work!`;
+    message = `Hello ${member.name}! \n\nWelcome to *${gymName}*! Your membership is now active.\n• Batch: *${member.batch || 'General Access'}*\n• Valid Till: *${member.expiryDate}*\n• Paid: *₹${member.feeAmount}* (${member.paymentMode || 'UPI'})\n\nLet's get to work!`;
   } else if (type === 'renewal') {
-    message = `Namaste ${member.name}! \n\nYour membership at *${gymName}* has been renewed.\n• Plan: *${extra.planLabel || `${member.planMonths} Month(s)`}*\n• New Expiry: *${member.expiryDate}*\n• Paid: *₹${member.feeAmount}* (${member.paymentMode || 'UPI'})\n\nThank you for training with us!`;
+    message = `Hello ${member.name}! \n\nYour membership at *${gymName}* has been renewed.\n• Plan: *${extra.planLabel || `${member.planMonths} Month(s)`}*\n• New Expiry: *${member.expiryDate}*\n• Paid: *₹${member.feeAmount}* (${member.paymentMode || 'UPI'})\n\nThank you for training with us!`;
   } else {
-    message = `Namaste ${member.name}! \n\nThis is a friendly reminder from *${gymName}*.\nYour gym membership fee of *₹${member.feeAmount}* is due on *${member.expiryDate}*.\n\nKindly renew via UPI or Cash to continue workouts`;
+    message = `Hello ${member.name}! \n\nThis is a friendly reminder from *${gymName}*.\nYour gym membership fee of *₹${member.feeAmount}* is due on *${member.expiryDate}*.\n\nKindly renew via UPI or Cash to continue workouts`;
   }
 
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
@@ -176,6 +178,7 @@ export default function App() {
   const [otpEmail, setOtpEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpType, setOtpType] = useState('email'); // 'signup' | 'email'
+  const [showPassword, setShowPassword] = useState(false);
 
   // App Data State
   const [members, setMembers] = useState([]);
@@ -191,59 +194,71 @@ export default function App() {
     return saved ? JSON.parse(saved) : ['feat_attendance', 'feat_notifications'];
   });
 
-  // Dynamic Gym Batches (Persisted per Gym)
-  const batchScopeKey = gymProfile?.id || session?.user?.id || 'guest';
-  const batchStorageKey = `gym_custom_batches_${batchScopeKey}`;
-  const [batches, setBatches] = useState([
-    'Morning (6 AM - 10 AM)',
-    'Evening (4 PM - 9 PM)',
-    'General Access',
-  ]);
+  // Dynamic Gym Batches (Synced per Gym via Supabase)
+      const DEFAULT_BATCHES = ['Morning (6 AM - 10 AM)', 'Evening (4 PM - 9 PM)', 'General Access'];
+      const [batches, setBatches] = useState(DEFAULT_BATCHES);
+      const [isAddingBatch, setIsAddingBatch] = useState(false);
+      const [newBatchName, setNewBatchName] = useState('');
 
-  useEffect(() => {
-    const saved = localStorage.getItem(batchStorageKey);
-    if (saved) {
-      setBatches(JSON.parse(saved));
-    } else {
-      setBatches(['Morning (6 AM - 10 AM)', 'Evening (4 PM - 9 PM)', 'General Access']);
-    }
-  }, [batchStorageKey]);
+      useEffect(() => {
+        if (Array.isArray(gymProfile?.batches) && gymProfile.batches.length > 0) {
+          setBatches(gymProfile.batches);
+        } else {
+          setBatches(DEFAULT_BATCHES);
+        }
+      }, [gymProfile?.id, gymProfile?.batches]);
 
-  useEffect(() => {
-    localStorage.setItem(batchStorageKey, JSON.stringify(batches));
-  }, [batchStorageKey, batches]);
-const [isAddingBatch, setIsAddingBatch] = useState(false);
-const [newBatchName, setNewBatchName] = useState('');
+      const persistBatchesToSupabase = async (nextBatches) => {
+        setBatches(nextBatches);
+        if (!gymProfile?.id) return;
 
-  const handleAddCustomBatch = (e) => {
-    e.preventDefault();
-    const trimmed = newBatchName.trim();
-    if (!trimmed) return;
-    if (batches.some((b) => b.toLowerCase() === trimmed.toLowerCase())) {
-      showToast('This batch already exists.');
-      return;
-    }
-    setBatches((prev) => [...prev, trimmed]);
-    setNewBatchName('');
-    setIsAddingBatch(false);
-    showToast(`Added slot: ${trimmed}`);
-  };
+        const { data, error } = await supabase
+          .from('gyms')
+          .update({ batches: nextBatches })
+          .eq('id', gymProfile.id)
+          .select()
+          .single();
 
-  const handleDeleteBatch = (batchToDelete) => {
-    if (batches.length <= 1) {
-      showToast('You must keep at least one batch slot.');
-      return;
-    }
-    const memberCount = members.filter((m) => (m.batch || 'General Access') === batchToDelete).length;
-    if (memberCount > 0) {
-      const confirmRemove = window.confirm(
-        `"${batchToDelete}" currently has ${memberCount} member(s). Removing it from list will not delete those members, but it will no longer appear in new selections. Proceed?`
-      );
-      if (!confirmRemove) return;
-    }
-    setBatches((prev) => prev.filter((b) => b !== batchToDelete));
-    showToast(`Removed slot: ${batchToDelete}`);
-  };
+        if (error) {
+          showToast('Failed to sync slot: ' + error.message);
+          return;
+        }
+        if (data && typeof setGymProfile === 'function') {
+          setGymProfile(data);
+        }
+      };
+
+      const handleAddCustomBatch = async (e) => {
+        e.preventDefault();
+        const trimmed = newBatchName.trim();
+        if (!trimmed) return;
+        if (batches.some((b) => b.toLowerCase() === trimmed.toLowerCase())) {
+          showToast('This batch already exists.');
+          return;
+        }
+        const nextBatches = [...batches, trimmed];
+        setNewBatchName('');
+        setIsAddingBatch(false);
+        await persistBatchesToSupabase(nextBatches);
+        showToast(`Added slot: ${trimmed}`);
+      };
+
+      const handleDeleteBatch = async (batchToDelete) => {
+        if (batches.length <= 1) {
+          showToast('You must keep at least one batch slot.');
+          return;
+        }
+        const memberCount = members.filter((m) => (m.batch || 'General Access') === batchToDelete).length;
+        if (memberCount > 0) {
+          const confirmRemove = window.confirm(
+            `"${batchToDelete}" currently has ${memberCount} member(s). Removing it from list will not delete those members, but it will no longer appear in new selections. Proceed?`
+          );
+          if (!confirmRemove) return;
+        }
+        const nextBatches = batches.filter((b) => b !== batchToDelete);
+        await persistBatchesToSupabase(nextBatches);
+        showToast(`Removed slot: ${batchToDelete}`);
+      };
   
   // Modals & Notifications
   const [renewModalMember, setRenewModalMember] = useState(null);
@@ -802,7 +817,7 @@ const [customWelcomeText, setCustomWelcomeText] = useState('');
     setMembers((prev) => [newRecord, ...prev]);
     setActiveTab('register');
     showToast(`Saved ${newRecord.name} to Register!`);
-    const defaultMsg = `Namaste ${newRecord.name}! \n\nWelcome to *${gymProfile.gym_name || 'My Gym'}*! Your membership is now active.\n• Batch: *${newRecord.batch || 'General Access'}*\n• Valid Till: *${newRecord.expiryDate}*\n• Paid: *₹${newRecord.feeAmount}* (${newRecord.paymentMode || 'UPI'})\n\nLet's get to work!`;
+    const defaultMsg = `Hello ${newRecord.name}! \n\nWelcome to *${gymProfile.gym_name || 'My Gym'}*! Your membership is now active.\n• Batch: *${newRecord.batch || 'General Access'}*\n• Valid Till: *${newRecord.expiryDate}*\n• Paid: *₹${newRecord.feeAmount}* (${newRecord.paymentMode || 'UPI'})\n\nLet's get to work!`;
 setCustomWelcomeText(defaultMsg);
 setWelcomeModalData(newRecord);
   };
@@ -1066,14 +1081,23 @@ const openEditModal = (member) => {
                         Forgot Password?
                       </button>
                     </div>
-                    <input
-                      type="password"
-                      required
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
+                    <div className="relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          required
+          value={loginPassword}
+          onChange={(e) => setLoginPassword(e.target.value)}
+          placeholder="••••••••"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+        >
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
                   </div>
                 )}
 
@@ -1195,15 +1219,24 @@ const openEditModal = (member) => {
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">Create Password *</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="Min. 6 characters"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <div className="relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          required
+          minLength={6}
+          value={regPassword}
+          onChange={(e) => setRegPassword(e.target.value)}
+          placeholder="Min. 6 characters"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3 pr-10 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+        >
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
               </div>
 
               <button
@@ -1318,15 +1351,24 @@ const openEditModal = (member) => {
                   <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
                     New Password
                   </label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Min. 6 characters"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                  <div className="relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          required
+          minLength={6}
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="Min. 6 characters"
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+        >
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
                 </div>
 
                 <button
@@ -2094,7 +2136,7 @@ const openEditModal = (member) => {
             </div>
           </div>
         )}
-        
+
 {/* Member Payment History Sheet */}
         {historyModalMember && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
