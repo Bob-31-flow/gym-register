@@ -38,6 +38,8 @@ import {
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
+const APP_VERSION = '1.2.0';
+
 const UPCOMING_FEATURES = [
   {
     id: 'feat_attendance',
@@ -148,6 +150,23 @@ function formatMonthLabel(ym) {
 }
 
 export default function App() {
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+  useEffect(() => {
+    const seenVersion = localStorage.getItem('gym_register_version');
+    if (!seenVersion) {
+      localStorage.setItem('gym_register_version', APP_VERSION);
+      return;
+    }
+    if (seenVersion !== APP_VERSION) {
+      setShowUpdateBanner(true);
+    }
+  }, []);
+
+  const handleApplyUpdate = () => {
+    localStorage.setItem('gym_register_version', APP_VERSION);
+    setShowUpdateBanner(false);
+    window.location.reload();
+  };
   // Auth & Session State
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -2319,7 +2338,24 @@ const openEditModal = (member) => {
             </div>
           </div>
         )}
-
+{/* App Update Notification Banner */}
+      {showUpdateBanner && (
+        <div className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-sm rounded-2xl bg-zinc-950/95 border border-emerald-500/40 p-4 shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 text-white">
+          <div className="text-xs">
+            <p className="font-bold text-white flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Update Available (v{APP_VERSION})
+            </p>
+            <p className="text-slate-400 mt-0.5">A new version of Gym Register is ready.</p>
+          </div>
+          <button
+            onClick={handleApplyUpdate}
+            className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-black text-xs font-bold rounded-lg shrink-0 transition shadow-sm"
+          >
+            Reload
+          </button>
+        </div>
+      )}
       </div>
     </div>
   );
