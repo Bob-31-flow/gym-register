@@ -1653,7 +1653,7 @@ const openEditModal = (member) => {
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
                 Built by <span className="text-emerald-600 font-bold">Bobby Jaiswal</span>
               </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Gym Register • v1.0 Pilot</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Gym Register • v{APP_VERSION} Pilot</p>
             </div>
           </div>
               )}
